@@ -73,7 +73,7 @@ void loop()
             }
             break;        
 
-        case TEMP_EDGE_FALLING:    
+        case TEMP_EDGE_FALLING:    // TODO FALLING alarm not working
             if ((temp_last > temp_set) && (temp_celsius < temp_set))
             {
                 alarm = true;
@@ -104,13 +104,15 @@ void loop()
             display.setTextSize(2);
             display.setTextColor(WHITE);
             display.setCursor(0, 10);
+            display.print("READ: ");
             display.println(String(temp_celsius, 1));
-            display.setCursor(64, 10);
-            display.println(String(temp_last, 1));
-            display.setCursor(0, 27);            
+            // display.setCursor(64, 10);
+            // display.println(String(temp_last, 1));
+            display.setCursor(0, 27); 
+            display.print("SET:  ");          
             display.println(String(temp_set, 0));
             display.setTextSize(1);
-            display.setCursor(64, 27);
+            display.setCursor(0, 45);
             switch(edge_type)
             {
                 case TEMP_EDGE_NOT_SET:
