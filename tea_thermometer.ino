@@ -23,14 +23,16 @@ DallasTemperature sensors(&oneWire);
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+float temp_celsius = 0.0;
 float temp_last = 0.0;
-uint8_t temp_set;
+float temp_set;
 volatile uint8_t edge_type = TEMP_EDGE_NOT_SET;
 
 unsigned long long now,
-    display_refresh_timer;
+    display_refresh_timer,
+    alarm_start_timer;
 
-
+bool alarm = false;
 
 void setup()
 {
@@ -49,44 +51,87 @@ void setup()
     Serial.begin(9600);
     Serial.println("Oj tak byczq");
     edge_type = TEMP_EDGE_NOT_SET;
-
 }
 
 void loop()
 {
     now = millis();
-    // read_button_inc_switch(BUTTON_PIN, TEMP_EDGE_NOT_SET, TEMP_EDGE_FALLING, edge_type);
-    if (edge_type == TEMP_EDGE_NOT_SET)
-    {
-        temp_set = map(analogRead(POTENTIOMETER_PIN), 0, 1023, 20, 80);
-    }
-    sensors.requestTemperatures(); 
-    float temp_celsius = sensors.getTempCByIndex(0);
+    digitalWrite(BUZZER_PIN, alarm);
 
-    if (now - display_refresh_timer > 500)
+    switch(edge_type)
     {
+        case TEMP_EDGE_NOT_SET:        
+            temp_set = float(map(analogRead(POTENTIOMETER_PIN), 0, 1023, 20, 80));
+            break;        
+
+        case TEMP_EDGE_RISING:        
+            if ((temp_last < temp_set) && (temp_celsius > temp_set))
+            {
+                alarm = true;
+                alarm_start_timer = now;
+                Serial.println("Set alarm rising TRUE");
+            }
+            break;        
+
+        case TEMP_EDGE_FALLING:    
+            if ((temp_last > temp_set) && (temp_celsius < temp_set))
+            {
+                alarm = true;
+                alarm_start_timer = now;
+                Serial.println("Set alarm falling TRUE");
+            }
+            break;    
+    }
+
+
+    if ( now - alarm_start_timer > 500 && alarm == true)
+    {
+        alarm = false;
+        Serial.println("Reset alarm");
+    }
+
+    if (now - display_refresh_timer > 1000)
+    {
+        sensors.requestTemperatures(); 
+        temp_last = temp_celsius;
+        temp_celsius = sensors.getTempCByIndex(0);
         display_refresh_timer = now;
         if(temp_celsius != DEVICE_DISCONNECTED_C) 
         {
-            Serial.print("Temperature for the device 1 (index 0) is: ");
+            Serial.print("Temp read: ");
             Serial.println(temp_celsius);
             display.clearDisplay();
             display.setTextSize(2);
             display.setTextColor(WHITE);
             display.setCursor(0, 10);
             display.println(String(temp_celsius, 1));
-            display.setCursor(0, 27);
-            display.println(temp_set);
+            display.setCursor(64, 10);
+            display.println(String(temp_last, 1));
+            display.setCursor(0, 27);            
+            display.println(String(temp_set, 0));
+            display.setTextSize(1);
             display.setCursor(64, 27);
-            display.println(edge_type);
-            display.display(); 
-            temp_last = temp_celsius;
+            switch(edge_type)
+            {
+                case TEMP_EDGE_NOT_SET:
+                    display.println("Not set");
+                    break;
+                case TEMP_EDGE_RISING:
+                    display.println("Rising");
+                    break;
+                case TEMP_EDGE_FALLING:
+                    display.println("Falling");
+                    break;
+            }
+            
+            display.display();             
         } 
         else
         {
             Serial.println("Error: Could not read temperature data");
         }
     }
+
 }
 
 void change_edge() {
