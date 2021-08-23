@@ -536,6 +536,15 @@
                 "__BUILTIN_AVR_FMUL=1",
                 "USBCON"
             ]
+        },
+        {
+            "name": "Win32",
+            "includePath": [
+                "C:\\Users\\Piotr\\Documents\\Arduino\\libraries\\Adafruit_SSD1306"
+            ],
+            "forcedInclude": [
+                "D:\\Programy\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
+            ]
         }
     ]
 }
