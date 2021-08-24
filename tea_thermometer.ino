@@ -15,6 +15,7 @@
 #define TEMP_EDGE_RISING 0
 #define TEMP_EDGE_NOT_SET 1
 #define TEMP_EDGE_FALLING 2
+#define TEMP_EDGE_CHANGE 3
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
@@ -65,7 +66,7 @@ void loop()
             break;        
 
         case TEMP_EDGE_RISING:        
-            if ((temp_last < temp_set) && (temp_celsius > temp_set))
+            if ((temp_last <= temp_set) && (temp_celsius > temp_set))
             {
                 alarm = true;
                 alarm_start_timer = now;
@@ -74,58 +75,74 @@ void loop()
             break;        
 
         case TEMP_EDGE_FALLING:    // TODO FALLING alarm not working
-            if ((temp_last > temp_set) && (temp_celsius < temp_set))
+            if ((temp_last >= temp_set) && (temp_celsius < temp_set))
             {
                 alarm = true;
                 alarm_start_timer = now;
                 Serial.println("Set alarm falling TRUE");
             }
-            break;    
+            break; 
+
+        case TEMP_EDGE_CHANGE:  
+            if (((temp_last <= temp_set) && (temp_celsius > temp_set)) || ((temp_last >= temp_set) && (temp_celsius < temp_set)))
+            {
+                alarm = true;
+                alarm_start_timer = now;
+                Serial.println("Set alarm change TRUE");
+            }
+            break; 
     }
 
-
-    if ( now - alarm_start_timer > 500 && alarm == true)
+    if ( now - alarm_start_timer > 100 && alarm == true)
     {
         alarm = false;
         Serial.println("Reset alarm");
     }
 
-    if (now - display_refresh_timer > 1000)
+    if (now - display_refresh_timer > 250)
     {
+        display.clearDisplay();  
         sensors.requestTemperatures(); 
-        temp_last = temp_celsius;
+        if (temp_celsius != DEVICE_DISCONNECTED_C)
+            temp_last = temp_celsius;
         temp_celsius = sensors.getTempCByIndex(0);
         display_refresh_timer = now;
         if(temp_celsius != DEVICE_DISCONNECTED_C) 
         {
+            // String s_temp_celsius, s_temp_set;
+            // s_temp_celsius = String(temp_celsius, 1);
+            // s_temp_set = String(temp_set, 1);
             Serial.print("Temp read: ");
-            Serial.println(temp_celsius);
-            display.clearDisplay();
+            Serial.print(temp_celsius);
+            Serial.print("\tLast: ");
+            Serial.println(temp_last);
+            // display.clearDisplay();
             display.setTextSize(2);
             display.setTextColor(WHITE);
             display.setCursor(0, 10);
             display.print("READ: ");
-            display.println(String(temp_celsius, 1));
-            // display.setCursor(64, 10);
-            // display.println(String(temp_last, 1));
+            display.print(temp_celsius, 1);
             display.setCursor(0, 27); 
             display.print("SET:  ");          
-            display.println(String(temp_set, 0));
+            display.print(temp_set, 1);
             display.setTextSize(1);
             display.setCursor(0, 45);
             switch(edge_type)
             {
-                case TEMP_EDGE_NOT_SET:
-                    display.println("Not set");
-                    break;
                 case TEMP_EDGE_RISING:
                     display.println("Rising");
+                    break;
+                case TEMP_EDGE_NOT_SET:
+                    display.println("Not set");
                     break;
                 case TEMP_EDGE_FALLING:
                     display.println("Falling");
                     break;
-            }
-            
+                case TEMP_EDGE_CHANGE:
+                    display.println("Change");
+                    break;
+            }      
+            // display.drawRect(55, 64, 64, 7, SSD1306_BLACK);       
             display.display();             
         } 
         else
@@ -142,10 +159,12 @@ void change_edge() {
     if (interrupt_time - last_interrupt_time > 200) 
     {
         edge_type += 1;
-        if (edge_type > TEMP_EDGE_FALLING)
+        if (edge_type > TEMP_EDGE_CHANGE)
         {
             edge_type = TEMP_EDGE_RISING;
         }
+        Serial.print("Edge: ");
+        Serial.println(edge_type);
     }
     last_interrupt_time = interrupt_time;
 }
