@@ -540,11 +540,11 @@
         {
             "name": "Win32",
             "includePath": [
+                "C:\\Users\\Piotr\\AppData\\Local\\Arduino15\\packages\\Breadboard Arduino\\hardware\\avr\\1.6.10\\**",
+                "C:\\Users\\Piotr\\Documents\\Arduino\\libraries\\PinChangeInterrupt\\src",
                 "C:\\Users\\Piotr\\Documents\\Arduino\\libraries\\Adafruit_SSD1306"
             ],
-            "forcedInclude": [
-                "D:\\Programy\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
-            ]
+            "forcedInclude": []
         }
     ]
 }

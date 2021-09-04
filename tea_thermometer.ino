@@ -1,3 +1,15 @@
+/*
+Project author: Smarzony
+In order to work, install https://github.com/oshlab/Breadboard-Arduino board.
+Program this with programmer AVR ISP on serial port using board ATmega328p (8mhz internal).
+During programming push RESET button while output says: "Uploading"
+*/
+
+#include <PinChangeInterrupt.h>
+#include <PinChangeInterruptBoards.h>
+#include <PinChangeInterruptPins.h>
+#include <PinChangeInterruptSettings.h>
+
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 #include <OneWire.h>
@@ -6,11 +18,11 @@
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
-#define ONE_WIRE_BUS 2
-#define BUZZER_PIN 7
+#define ONE_WIRE_BUS 7
+#define BUZZER_PIN 5
 #define LED_PIN 13
 #define POTENTIOMETER_PIN A0
-#define BUTTON_PIN 3
+#define BUTTON_PIN 9
 
 #define TEMP_EDGE_RISING 0
 #define TEMP_EDGE_NOT_SET 1
@@ -48,7 +60,8 @@ void setup()
     pinMode(LED_PIN, OUTPUT);
     pinMode(BUZZER_PIN, OUTPUT);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), change_edge, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), change_edge, FALLING);
+    attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(BUTTON_PIN), change_edge, FALLING);
     Serial.begin(9600);
     Serial.println("Oj tak byczq");
     edge_type = TEMP_EDGE_NOT_SET;
@@ -57,7 +70,8 @@ void setup()
 void loop()
 {
     now = millis();
-    digitalWrite(BUZZER_PIN, alarm);
+    digitalWrite(BUZZER_PIN, !alarm);
+    digitalWrite(LED_PIN, alarm);
 
     switch(edge_type)
     {
@@ -91,7 +105,7 @@ void loop()
                 Serial.println("Set alarm change TRUE");
             }
             break; 
-    }
+    } 
 
     if ( now - alarm_start_timer > 100 && alarm == true)
     {

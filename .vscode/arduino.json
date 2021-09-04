@@ -1,7 +1,7 @@
 {
-    "board": "arduino:avr:uno",
-    "programmer": "arduino:avrispmkii",
+    "board": "Breadboard Arduino:avr:atmega328bb",
+    "programmer": "AVR ISP",
     "sketch": "tea_thermometer.ino",
     "output": "../build",
-    "port": "COM5"
+    "port": "COM7"
 }
