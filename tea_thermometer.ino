@@ -32,8 +32,8 @@ During programming push RESET button while output says: "Uploading"
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-#define OLED_RESET     -4 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+#define OLED_RESET -1
+#define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 float temp_celsius = 0.0;
@@ -52,7 +52,7 @@ void setup()
     if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) 
     {
         Serial.println(F("SSD1306 allocation failed"));
-        for(;;); // Don't proceed, loop forever
+        for(;;);
     }
     delay(500);
     display.clearDisplay();
@@ -60,7 +60,6 @@ void setup()
     pinMode(LED_PIN, OUTPUT);
     pinMode(BUZZER_PIN, OUTPUT);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-    // attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), change_edge, FALLING);
     attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(BUTTON_PIN), change_edge, FALLING);
     Serial.begin(9600);
     Serial.println("Oj tak byczq");
@@ -75,11 +74,12 @@ void loop()
 
     switch(edge_type)
     {
-        case TEMP_EDGE_NOT_SET:        
-            temp_set = float(map(analogRead(POTENTIOMETER_PIN), 0, 1023, 20, 80));
+        case TEMP_EDGE_NOT_SET:
+            temp_set = set_temp();
             break;        
 
-        case TEMP_EDGE_RISING:        
+        case TEMP_EDGE_RISING:
+            temp_set = set_temp(); 
             if ((temp_last <= temp_set) && (temp_celsius > temp_set))
             {
                 alarm = true;
@@ -88,7 +88,8 @@ void loop()
             }
             break;        
 
-        case TEMP_EDGE_FALLING:    // TODO FALLING alarm not working
+        case TEMP_EDGE_FALLING:
+            temp_set = set_temp();
             if ((temp_last >= temp_set) && (temp_celsius < temp_set))
             {
                 alarm = true;
@@ -98,6 +99,7 @@ void loop()
             break; 
 
         case TEMP_EDGE_CHANGE:  
+            temp_set = set_temp();
             if (((temp_last <= temp_set) && (temp_celsius > temp_set)) || ((temp_last >= temp_set) && (temp_celsius < temp_set)))
             {
                 alarm = true;
@@ -123,14 +125,10 @@ void loop()
         display_refresh_timer = now;
         if(temp_celsius != DEVICE_DISCONNECTED_C) 
         {
-            // String s_temp_celsius, s_temp_set;
-            // s_temp_celsius = String(temp_celsius, 1);
-            // s_temp_set = String(temp_set, 1);
             Serial.print("Temp read: ");
             Serial.print(temp_celsius);
             Serial.print("\tLast: ");
             Serial.println(temp_last);
-            // display.clearDisplay();
             display.setTextSize(2);
             display.setTextColor(WHITE);
             display.setCursor(0, 10);
@@ -155,8 +153,7 @@ void loop()
                 case TEMP_EDGE_CHANGE:
                     display.println("Change");
                     break;
-            }      
-            // display.drawRect(55, 64, 64, 7, SSD1306_BLACK);       
+            }          
             display.display();             
         } 
         else
@@ -181,4 +178,13 @@ void change_edge() {
         Serial.println(edge_type);
     }
     last_interrupt_time = interrupt_time;
+}
+
+float set_temp()
+{
+    int analog_input;
+    float output_value;
+    analog_input = map(analogRead(0), 0, 1023, 0, 600);
+    output_value = (float(analog_input) / 10) + 20.0;
+    return output_value;
 }
